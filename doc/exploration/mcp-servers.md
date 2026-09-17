@@ -136,6 +136,18 @@ The exploration originally lived on two branches off `master`:
 - `local-mcp` — created from master but never received a commit; its notes lived only in an
   untracked file outside the repo
 
-Both were consolidated into the trunk once the framework settled the question, because the
-branches no longer represented alternatives — one server is used, one is not, and both facts
-belong in the same place.
+**Both branches were deleted on 2026-09-17**, locally and on the remote. They no longer
+represented alternatives once the framework settled the question: one server is used, one is
+not, and both facts belong in the same place — this file. Keeping branches named after a
+decision that has been made invites someone to assume the decision is still open.
+
+Nothing was lost. `local-mcp` was byte-identical to `master`. `core-mcp` carried one commit,
+`f65db77`, which had already been merged into `master` locally and is carried on the
+`agent/framework-bootstrap` branch.
+
+One thing to know if you are reading this from a fresh clone: at the time of the deletion
+`origin/master` was still at the initial commit `d77e230`, so `f65db77` survived on the
+remote only because `agent/framework-bootstrap` had been pushed first. The safety check that
+cleared the deletion compared against *local* master, which had already been fast-forwarded —
+a check that gave the right answer for a slightly wrong reason. **Compare against the remote
+ref, not the local one, before deleting a remote branch.**
