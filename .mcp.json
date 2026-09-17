@@ -1,11 +1,42 @@
 {
+  "_comment": [
+    "Core MCP is deliberately absent. Everything it does, `fab` does, and `fab` does more -",
+    "including git integration and job execution, which Core MCP does not expose at all.",
+    "Previous config: doc/framework/mcp.json.pre-framework.bak",
+    "",
+    "Local MCP is kept for knowledge only, and the args below are what make that structural",
+    "rather than a rule anyone has to follow. Measured against Fabric.Mcp.Server 1.4.0 by",
+    "handshaking with it and calling tools/list - not from the docs, which are wrong here:",
+    "",
+    "  --namespace docs --read-only   1 tool    ~340 tokens/turn   <- this config",
+    "  --mode all --read-only        26 tools  ~4,741 tokens/turn",
+    "  --mode all                    48 tools  (includes create/run/delete)",
+    "  --mode namespace               0 tools  (the documented default; exposes nothing)",
+    "  no flags at all                0 tools",
+    "",
+    "The single `docs` tool routes to all six documentation tools: api-examples,",
+    "best-practices, item-api-spec, item-definitions, list-item-types, platform-api-spec.",
+    "That is the whole reason this server is here - writing a correct .platform and item",
+    "definition from scratch instead of guessing. Nothing else from this server is wanted,",
+    "and with this scoping nothing else is even loaded.",
+    "",
+    "See doc/exploration/mcp-servers.md and register V8."
+  ],
   "mcpServers": {
-    "fabric-core": {
-      "type": "http",
-      "url": "https://api.fabric.microsoft.com/v1/mcp/core",
-      "oauth": {
-        "scopes": "https://api.fabric.microsoft.com/.default"
-      }
+    "fabric-local": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@microsoft/fabric-mcp@latest",
+        "server",
+        "start",
+        "--transport",
+        "stdio",
+        "--namespace",
+        "docs",
+        "--read-only"
+      ]
     }
   }
 }

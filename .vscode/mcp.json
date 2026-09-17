@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "fabric-local": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@microsoft/fabric-mcp@latest",
+        "server",
+        "start",
+        "--transport",
+        "stdio",
+        "--namespace",
+        "docs",
+        "--read-only"
+      ]
+    }
+  }
+}

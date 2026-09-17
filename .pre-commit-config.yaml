@@ -1,0 +1,48 @@
+# Local hook for speed, CI check for truth.
+#
+# A git hook alone is not enough: .git/hooks is not committed, does not survive a clone,
+# is skipped by --no-verify, and never runs in CI. This config drives both, so the same
+# rules apply whether a human, an agent, or a pipeline is committing.
+#
+#   pip install pre-commit && pre-commit install
+#
+# CI runs the identical set with: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: fabctl-normalise
+        name: normalise repo files (deterministic, no model in the loop)
+        entry: python tools/render/normalise.py
+        language: system
+        pass_filenames: true
+        types_or: [python, json, yaml, markdown]
+        exclude: '^(\.git/|out/|node_modules/)'
+
+      - id: fabctl-ledger-chain
+        name: ledger hash chain intact
+        # Via run_fabctl.py: pre-commit's system hooks cannot set PYTHONPATH themselves.
+        entry: python tools/ci/run_fabctl.py ledger verify --quiet
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: fabctl-ledger-append-only
+        name: ledger records are appended, never rewritten
+        entry: python tools/ci/check_ledger_append_only.py
+        language: system
+        pass_filenames: false
+        files: '^ledger/'
+
+      - id: fabctl-tests
+        name: fabctl unit tests
+        entry: python -m unittest discover -s tools/tests -t tools
+        language: system
+        pass_filenames: false
+        files: '^tools/'
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: secret scan (Fabric connection strings and SP secrets leak easily)

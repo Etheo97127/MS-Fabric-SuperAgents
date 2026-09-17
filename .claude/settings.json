@@ -1,0 +1,97 @@
+{
+  "$comment": [
+    "Read by BOTH Claude Code and VS Code Copilot — Copilot accepts .claude/settings.json",
+    "natively, so one committed file governs both agents with no shim.",
+    "",
+    "Copilot needs chat.useCustomAgentHooks: true in its own settings to honour these.",
+    "",
+    "This file is what turns the framework's invariant from a rule agents are asked to",
+    "follow into one they cannot bypass. Treat edits to it as security-relevant: it",
+    "belongs in CODEOWNERS with human review required."
+  ],
+  "enabledMcpjsonServers": [],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/fabctl/hooks/inject_context.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/fabctl/hooks/deny_mcp_mutation.py\"",
+            "timeout": 10,
+            "statusMessage": "checking MCP call against the write-path rule"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/fabctl/hooks/guard_raw_fab.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/fabctl/hooks/ledger_append.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m fabctl preflight --brief",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m fabctl ledger verify --quiet",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "_comment": [
+    "Read by BOTH Claude Code and VS Code Copilot - Copilot accepts .claude/settings.json",
+    "natively, so one committed file governs both agents with no shim.",
+    "",
+    "Copilot needs chat.useCustomAgentHooks: true in its own settings to honour these.",
+    "",
+    "This file is what turns the framework's invariant from a rule agents are asked to",
+    "follow into one they cannot bypass. Treat edits to it as security-relevant: it",
+    "belongs in CODEOWNERS with human review required.",
+    "",
+    "UserPromptSubmit re-injects the workspace boundary on EVERY turn. That is deliberate:",
+    "compaction erodes an instruction stated once, but cannot erode one re-added after each",
+    "compaction. Keep its output small - it is paid for every turn."
+  ]
+}

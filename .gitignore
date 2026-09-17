@@ -1,0 +1,33 @@
+# Generated artefacts. Regenerate from a version tag; never commit.
+out/
+*.xlsx
+*.xlsm
+
+# Jupyter notebooks: Fabric notebooks live as notebook-content.py under fabric/.
+# An .ipynb in this repo means someone exported the wrong format.
+*.ipynb
+.ipynb_checkpoints/
+
+# Secrets never reach git. Config belongs in a Variable Library item; secrets in Key Vault.
+.env
+.env.*
+*.pem
+*.pfx
+*.key
+secrets.json
+.fabctl.local.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Node (npx leaves this behind when running the local MCP server)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
