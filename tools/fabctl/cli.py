@@ -18,7 +18,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import config, fabwrap, preflight, verbs, workspace
+from . import config, fabwrap, preflight, trail, verbs, workspace
 from .ledger import Actor, Ledger
 
 
@@ -216,6 +216,21 @@ def cmd_profile_lock(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_trail(args: argparse.Namespace) -> int:
+    """Read the decision history out of git."""
+    root = config.repo_root()
+    if args.summary:
+        return trail.summary(root)
+    return trail.render(
+        root,
+        limit=args.limit,
+        agents_only=args.agents_only,
+        with_ledger=args.with_ledger,
+        since=args.since,
+        path=args.path,
+    )
+
+
 # ---------------------------------------------------------------------------
 # parser
 # ---------------------------------------------------------------------------
@@ -244,6 +259,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("scope", help="show which workspaces this repo may touch")
     p.set_defaults(func=cmd_scope)
+
+    p = sub.add_parser("trail", help="the decision history: what changed, and why")
+    p.add_argument("-n", "--limit", type=int, default=20)
+    p.add_argument("--agents-only", action="store_true",
+                   help="only commits carrying an Agent-Run-Id trailer")
+    p.add_argument("--with-ledger", action="store_true",
+                   help="interleave what happened in Fabric on the same days")
+    p.add_argument("--since", help="e.g. '2 weeks ago'")
+    p.add_argument("--path", help="limit to a path")
+    p.add_argument("--summary", action="store_true",
+                   help="who changed this repo, and how much of it was an agent")
+    p.set_defaults(func=cmd_trail)
 
     profile_p = sub.add_parser("profile", help="topology profile")
     profile_sub = profile_p.add_subparsers(dest="profile_command", required=True)

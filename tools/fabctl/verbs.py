@@ -52,6 +52,7 @@ REGISTRY: dict[str, Verb] = {v.name: v for v in [
     Verb("verify env",     VerbClass.READ, "diff one table across two environments"),
     Verb("ledger verify",  VerbClass.READ, "walk the hash chain and report breaks"),
     Verb("ledger query",   VerbClass.READ, "query the ledger"),
+    Verb("trail",          VerbClass.READ, "read the decision history out of git"),
     Verb("mapping plan",   VerbClass.READ, "dry-run a mapping: schema delta and code diff"),
     Verb("normalise",      VerbClass.READ, "canonicalise repo files in place"),
 

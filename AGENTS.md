@@ -144,17 +144,32 @@ Agent-Surface: claude-code
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
-**Work on your own branch, never directly on the trunk.** Name it `agent/<slug>` for framework
-work, or `feature/<slug>` when the change is a normal feature. Branch off the trunk once at
-the start of a piece of work and stay on it; do not create a branch per response.
+**Work on `dev`, never directly on the trunk.** `dev` is long-lived and accumulates the
+session's history; `master` is the trunk and only receives merged pull requests.
+
+Deliberately *not* a branch per topic. The purpose of this history is an audit trail of what
+was decided, and for a single actor a branch per topic fragments the chronology across
+branches while adding review value nobody is using. The trail lives in commit messages and
+trailers, not in branch topology. Branches route; commits record.
+
+`dev` is also the framework's lowest environment branch, so once Fabric git integration is
+connected, a commit here that touches `fabric/` syncs to the dev workspace. That is the
+intended model — direct to dev, pull request above it — but it means a commit touching
+`fabric/` is a change to a live workspace, not just a note to yourself.
 
 **Open a pull request when the work is coherent enough to review** — a working capability, a
 resolved question, a self-contained fix. Not every response, and not only at the very end: a
 PR carrying forty commits is a PR nobody reads.
 
-Trunk is **`master`** in this repository. The environment chain below says `main` because that
-is the convention the framework documents; they should be reconciled before the environment
-branches are created.
+Trunk is **`master`**. The environment chain below says `main` because that is the convention
+the framework documents; they should be reconciled before the higher environment branches
+exist.
+
+**A Stop hook refuses to let a turn end with a dirty tree.** It does not commit for you, and
+that is the point: a hook does not know what was decided, so every message it could write
+would be a timestamp. Enforcement is mechanical, the message stays with whoever knows why.
+If it blocks twice on the same state it gives up and warns — a stuck guard must degrade into
+a nuisance, never a wall.
 
 Rules that matter more than they look:
 
@@ -167,6 +182,12 @@ Rules that matter more than they look:
   commits, and splitting them is what makes `git log` worth reading.
 - **Commit the failure too.** If a response ended with something not working, commit it with a
   message saying so. A trail that only shows successes is not a trail.
+
+Read the trail back with `fabctl trail` — `--agents-only` for agent commits, `--with-ledger`
+to interleave what happened in Fabric on the same days, `--summary` for who has been changing
+what. Note that git and the ledger record different things and neither contains the other: a
+decision to change approach leaves a commit and no ledger record; a notebook run leaves a
+ledger record and no commit.
 
 ### Branch model for environments
 

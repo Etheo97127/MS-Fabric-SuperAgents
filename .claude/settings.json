@@ -73,7 +73,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -m fabctl ledger verify --quiet",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/ci/run_fabctl.py\" ledger verify --quiet",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/tools/fabctl/hooks/require_clean_tree.py\"",
             "timeout": 30
           }
         ]
