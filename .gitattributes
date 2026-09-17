@@ -1,0 +1,18 @@
+# LF everywhere, enforced by git as well as by the normaliser.
+#
+# Without this, git's autocrlf converts to CRLF on checkout on Windows, the normaliser
+# converts back to LF, and `fabctl normalise --check` reports every file dirty forever.
+# Two tools disagreeing about line endings is a loop nobody wins, so git is told to stay
+# out of it.
+* text=auto eol=lf
+
+# Binary: never touched.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.zip binary
+
+# The ledger is append-only and hash-chained. Any transformation on checkout would break
+# the chain, so it is treated as opaque bytes.
+ledger/**/*.jsonl -text

@@ -1,0 +1,23 @@
+# PoC topology: one gate, two workspaces.
+# Use while proving something out. Promote to project.yaml the moment more than one
+# person depends on the output.
+name: poc
+vcs: github                 # github | azuredevops - the ONLY platform-coupled key
+
+scratch:
+  workspace: "Retail Scratch ${USER}"
+  git_connected: false      # must stay false: this is where direct writes are legal
+  ttl_days: 7
+
+environments:
+  - id: dev
+    workspace: "Retail Analytics Dev"
+    branch: dev
+    value_set: dev
+    gate: none              # agents commit directly here; sync fires on merge
+
+  - id: prod
+    workspace: "Retail Analytics Prod"
+    branch: main
+    value_set: prod
+    gate: pull_request

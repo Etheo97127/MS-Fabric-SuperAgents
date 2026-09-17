@@ -1,0 +1,37 @@
+# Enterprise topology: per-feature workspaces above the shared chain.
+# Each feature branch gets an isolated workspace, so several agents can work without
+# colliding in dev. Costs capacity; only worth it with concurrent workstreams.
+name: enterprise
+vcs: azuredevops            # requires a service principal - see doc/framework section 8
+
+scratch:
+  workspace: "Retail Scratch ${USER}"
+  git_connected: false
+  ttl_days: 3
+
+environments:
+  - id: feature
+    workspace: "Retail Feature ${USER}"
+    branch: feature/${BRANCH}
+    value_set: dev
+    gate: none
+
+  - id: dev
+    workspace: "Retail Analytics Dev"
+    branch: dev
+    value_set: dev
+    gate: pull_request
+
+  - id: test
+    workspace: "Retail Analytics Test"
+    branch: test
+    value_set: test
+    gate: pull_request
+    require_checks: [contract-drift, ledger-chain]
+
+  - id: prod
+    workspace: "Retail Analytics Prod"
+    branch: main
+    value_set: prod
+    gate: pull_request
+    require_checks: [reconcile-test, contract-drift, ledger-chain, secret-scan]

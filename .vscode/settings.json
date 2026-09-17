@@ -1,0 +1,11 @@
+{
+  "chat.useCustomAgentHooks": true,
+  "chat.mcp.access": "all",
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "python.analysis.extraPaths": [
+    "tools"
+  ]
+}
