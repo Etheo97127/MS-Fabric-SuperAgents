@@ -1,0 +1,32 @@
+# Standard project topology: dev -> test -> prod.
+# The default for anything with real consumers.
+name: project
+vcs: github
+
+scratch:
+  workspace: "Retail Scratch ${USER}"
+  git_connected: false
+  ttl_days: 7
+
+environments:
+  - id: dev
+    workspace: "Retail Analytics Dev"
+    branch: dev
+    value_set: dev
+    gate: none
+
+  - id: test
+    workspace: "Retail Analytics Test"
+    branch: test
+    value_set: test
+    gate: pull_request
+
+  - id: prod
+    workspace: "Retail Analytics Prod"
+    branch: main
+    value_set: prod
+    gate: pull_request
+    require_checks:
+      - reconcile-test      # data-reconcile passed against test
+      - contract-drift      # generated regions match their contracts
+      - ledger-chain        # audit ledger hash chain intact

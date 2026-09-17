@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deeeplabs.local/fabric-agent-framework/mapping.schema.json",
+  "title": "Data mapping contract",
+  "description": "A human-reviewed, PR-gated description of how one target entity is built from its sources. This file is the input to `fabctl mapping apply`, which regenerates the sentinel region of the transformation notebook from it. Only the current version exists as a file; history lives in git history plus the tag map/<entity>/v<version>.",
+  "type": "object",
+  "required": [
+    "version",
+    "target",
+    "sources",
+    "grain",
+    "strategy",
+    "keys",
+    "columns"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "Bump the minor for additive or corrective change, the major for a breaking one. Must match the tag applied to the merge commit."
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "layer",
+        "entity",
+        "lakehouse"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "layer": {
+          "enum": [
+            "bronze",
+            "silver",
+            "gold"
+          ]
+        },
+        "entity": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "lakehouse": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string",
+          "description": "Defaults to the entity name."
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "layer",
+          "table",
+          "alias"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "layer": {
+            "enum": [
+              "bronze",
+              "silver",
+              "gold",
+              "external"
+            ]
+          },
+          "table": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "join": {
+            "type": "string",
+            "description": "Join predicate against already-declared aliases. Omit on the first source."
+          },
+          "join_type": {
+            "enum": [
+              "inner",
+              "left",
+              "right",
+              "full"
+            ],
+            "default": "left"
+          }
+        }
+      }
+    },
+    "grain": {
+      "type": "string",
+      "description": "One sentence, in business terms: 'one row per customer'. Reviewers check this before they check any column."
+    },
+    "strategy": {
+      "enum": [
+        "overwrite",
+        "append",
+        "merge",
+        "scd2"
+      ],
+      "description": "merge requires keys.natural. scd2 additionally requires effective_from/effective_to columns."
+    },
+    "keys": {
+      "type": "object",
+      "required": [
+        "natural"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "natural": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "surrogate": {
+          "type": "string"
+        }
+      }
+    },
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "target",
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "source": {
+            "type": "string",
+            "description": "alias.column. Omit only when `expression` or `literal` supplies the value."
+          },
+          "expression": {
+            "type": "string",
+            "description": "SQL expression over declared aliases."
+          },
+          "literal": {
+            "description": "Constant value."
+          },
+          "type": {
+            "enum": [
+              "string",
+              "int",
+              "bigint",
+              "decimal",
+              "double",
+              "boolean",
+              "date",
+              "timestamp",
+              "binary"
+            ]
+          },
+          "precision": {
+            "type": "integer"
+          },
+          "scale": {
+            "type": "integer"
+          },
+          "nullable": {
+            "type": "boolean",
+            "default": true
+          },
+          "transform": {
+            "type": "string",
+            "description": "Named transform or expression in x. Use `x` for the source value, e.g. lower(trim(x))."
+          },
+          "pii": {
+            "type": "boolean",
+            "default": false
+          },
+          "masking": {
+            "enum": [
+              "none",
+              "hash_sha256",
+              "redact",
+              "tokenize",
+              "partial"
+            ],
+            "description": "Required when pii is true; CI rejects unmasked PII reaching gold."
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "pii": {
+                  "const": true
+                }
+              },
+              "required": [
+                "pii"
+              ]
+            },
+            "then": {
+              "required": [
+                "masking"
+              ],
+              "properties": {
+                "masking": {
+                  "not": {
+                    "const": "none"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "anyOf": [
+              {
+                "required": [
+                  "source"
+                ]
+              },
+              {
+                "required": [
+                  "expression"
+                ]
+              },
+              {
+                "required": [
+                  "literal"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "quality": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule",
+          "on_fail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "enum": [
+              "unique",
+              "not_null",
+              "accepted_values",
+              "range",
+              "referential_integrity",
+              "row_count_delta",
+              "expression"
+            ]
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "values": {
+            "type": "array"
+          },
+          "min": {},
+          "max": {},
+          "references": {
+            "type": "string",
+            "description": "layer.table.column"
+          },
+          "expression": {
+            "type": "string"
+          },
+          "on_fail": {
+            "enum": [
+              "quarantine",
+              "fail",
+              "warn"
+            ],
+            "description": "quarantine routes offending rows to <table>_rejected and continues; fail aborts the run."
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "approved_by": {
+          "type": "string"
+        },
+        "pr": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
