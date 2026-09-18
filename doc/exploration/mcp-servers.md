@@ -72,7 +72,7 @@ Current config in `.mcp.json`:
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@microsoft/fabric-mcp@latest", "server", "start",
-               "--transport", "stdio", "--mode", "namespace", "--read-only"]
+               "--transport", "stdio", "--namespace", "docs", "--read-only"]
     }
   }
 }
@@ -142,8 +142,7 @@ not, and both facts belong in the same place — this file. Keeping branches nam
 decision that has been made invites someone to assume the decision is still open.
 
 Nothing was lost. `local-mcp` was byte-identical to `master`. `core-mcp` carried one commit,
-`f65db77`, which had already been merged into `master` locally and is carried on the
-`agent/framework-bootstrap` branch.
+`f65db77`, which is now in `master` (merged via PR #1).
 
 One thing to know if you are reading this from a fresh clone: at the time of the deletion
 `origin/master` was still at the initial commit `d77e230`, so `f65db77` survived on the
