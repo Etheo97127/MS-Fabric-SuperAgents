@@ -112,7 +112,63 @@ def check_hooks(root: Path) -> Check:
     if missing:
         return Check("agent hooks", BLOCKED, f"not wired: {', '.join(missing)}",
                      "add the missing hook entries to .claude/settings.json")
-    return Check("agent hooks", OK, "deny, scope guard, backstop and injection wired")
+    return Check("agent hooks", OK, "configured (see `hooks firing` for whether they run)")
+
+
+def check_hooks_live(root: Path) -> Check:
+    """Are the hooks actually FIRING, not merely configured?
+
+    This exists because the previous check looked for hook filenames in settings.json and
+    reported "wired" for an entire session in which no hook ran even once. The cause was
+    that Claude Code was rooted at the PARENT directory, so .claude/ here was an ordinary
+    subfolder the harness never read.
+
+    Configuration is not effect. The heartbeat is written by the UserPromptSubmit hook, so
+    its presence is evidence the harness is running these files.
+    """
+    beat = root / ".git" / "fabctl-hook-heartbeat"
+    fix = (
+        "open Claude Code with this directory as the project root "
+        "(not its parent), then restart the session so agents and hooks are re-read"
+    )
+    if not beat.exists():
+        return Check("hooks firing", BLOCKED, "no hook has ever run in this clone", fix)
+
+    from datetime import datetime, timezone
+    try:
+        last = datetime.fromisoformat(beat.read_text(encoding="utf-8").strip())
+        age_h = (datetime.now(timezone.utc) - last).total_seconds() / 3600
+    except (OSError, ValueError):
+        return Check("hooks firing", UNKNOWN, "heartbeat unreadable")
+
+    if age_h > 24:
+        return Check("hooks firing", BLOCKED, f"last fired {age_h:.0f}h ago", fix)
+    return Check("hooks firing", OK, f"last fired {age_h * 60:.0f} min ago")
+
+
+def check_project_root(root: Path) -> Check:
+    """Does the harness consider THIS directory the project root?
+
+    .claude/ is only honoured at the project root. Nested inside another folder it is
+    inert — settings, hooks and subagents are all silently ignored, and nothing announces
+    it. That is exactly how a session can run for hours believing it is guarded.
+    """
+    import os
+    declared = os.environ.get("CLAUDE_PROJECT_DIR")
+    if not declared:
+        return Check(
+            "project root", UNKNOWN,
+            "CLAUDE_PROJECT_DIR unset - cannot confirm .claude/ is being read",
+            "check `hooks firing` below; that is the check that settles it",
+        )
+    if Path(declared).resolve() != root.resolve():
+        return Check(
+            "project root", BLOCKED,
+            f"harness root is {declared}, repo is {root}",
+            "open Claude Code with the repo itself as the project root; .claude/ is "
+            "ignored when nested",
+        )
+    return Check("project root", OK, "repo is the harness project root")
 
 
 def check_mcp_parity(root: Path) -> Check:
@@ -213,7 +269,9 @@ def run(profile_name: str | None = None, *, brief: bool = False) -> int:
         check_git(root),
         profile_check,
         check_scope(profile, root),
+        check_project_root(root),
         check_hooks(root),
+        check_hooks_live(root),
         check_mcp_parity(root),
         check_precommit(root),
         check_ledger(root),

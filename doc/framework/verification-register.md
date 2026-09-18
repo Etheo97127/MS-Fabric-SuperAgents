@@ -228,6 +228,45 @@ that `az repos pr` output fields match what `_to_pr` expects.
 
 ---
 
+### V12 — .claude/ is inert unless the repo IS the harness project root — **CONFIRMED 2026-09-18**
+**Found the hard way: every hook was dead for a full session**
+
+Claude Code was opened at `3d.Engineering Harness`, the *parent* of this repo. `.claude/`
+here was therefore an ordinary subfolder, and the harness never read it. For an entire
+session:
+
+- the MCP deny hook never fired
+- the workspace scope guard never fired — a raw `fab` call ran with no guard output at all
+- the context injection never ran, so the boundary was never re-stated
+- the clean-tree Stop hook never ran
+- `fabric-gatekeeper` was not registered as a subagent
+
+None of it announced itself. The only visible symptom was the subagent being missing, and
+that only surfaced because somebody tried to use it.
+
+**Why preflight said everything was fine.** `check_hooks` looked for hook filenames inside
+`.claude/settings.json`. That is a check on *configuration*, and it passes whether or not the
+harness ever loads the file. It reported "deny, scope guard, backstop and injection wired"
+throughout a session in which nothing was wired to anything.
+
+This is the same mistake as the MCP `--mode namespace` config in V8, made a second time:
+treating "it is set up correctly" as evidence of "it works". Both were caught only by going
+and looking at the effect.
+
+**Fix.** Two checks, both effect-based:
+
+- `check_hooks_live` — the injection hook writes a heartbeat to `.git/fabctl-hook-heartbeat`
+  every time it runs. preflight reports how long ago a hook actually fired. No heartbeat
+  means no hook has ever run in this clone, whatever settings.json says.
+- `check_project_root` — compares `CLAUDE_PROJECT_DIR` against the repo root when the harness
+  provides it.
+
+**Operational rule that follows:** open Claude Code with the repository itself as the project
+root, never its parent. Subagents and hooks are read at session start, so adding either
+mid-session requires a restart before they take effect.
+
+---
+
 ## B. Deliberately not built
 
 Left out because building them now would mean encoding a guess, or because they depend on
