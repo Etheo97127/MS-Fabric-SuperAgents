@@ -228,6 +228,47 @@ that `az repos pr` output fields match what `_to_pr` expects.
 
 ---
 
+### V13 — Git connection needs a credential this agent must not handle — **CONFIRMED 2026-09-18**
+**Blocks: `fabctl sync connect`, and therefore V1, V2, V3 and all of phase 1**
+
+Checked live against the tenant:
+
+```
+GET workspaces/e11a0c22.../git/connection
+  -> {"gitConnectionState": "NotConnected", "gitProviderDetails": null}
+
+GET connections
+  -> 1 connection: CapacityMetricsCES (capacity metrics, not source control)
+```
+
+So `Retail Analytics Dev` is not git-connected, and **no git provider connection exists in
+the tenant at all**.
+
+`POST /workspaces/{id}/git/connect` needs `myGitCredentials.connectionId` pointing at a
+connection that holds the provider credential. Creating that connection means supplying:
+
+- **GitHub** (this repo's host) — a Personal Access Token. `credentialType: Key`.
+- **Azure DevOps** — a service principal client secret. The docs are explicit that
+  `AzureDevOps for UserPrincipal is not supported`, so the SSO path is a portal-only flow.
+
+Both are credentials, so an agent must not create either. **A human creates the connection;
+the framework then uses its `connectionId`**, which is not a secret and can live in the
+profile.
+
+This is not a limitation to work around. A framework whose whole claim is an auditable trail
+should not be the thing that types a long-lived token into an API — and a `connectionId` in
+a committed profile is a better artefact than a PAT in a config anyway.
+
+**What a human needs to do once**, in the Fabric portal or by API:
+
+1. Create a GitHub source-control connection holding a PAT with repo scope.
+2. Give the resulting `connectionId` to the framework.
+
+`fabctl sync connect` can then do everything else: connect, initializeConnection, and the
+first `updateFromGit`.
+
+---
+
 ### V12 — .claude/ is inert unless the repo IS the harness project root — **CONFIRMED 2026-09-18**
 **Found the hard way: every hook was dead for a full session**
 
